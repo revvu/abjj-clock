@@ -1,0 +1,20 @@
+{
+  "name": "abjj-clock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "serve": "npx serve .",
+    "test": "vitest --run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "fast-check": "^4.5.3",
+    "happy-dom": "^20.7.0",
+    "jsdom": "^27.0.1",
+    "vitest": "^4.0.18"
+  }
+}

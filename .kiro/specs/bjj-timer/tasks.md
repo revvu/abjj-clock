@@ -1,0 +1,224 @@
+# Implementation Plan: BJJ Timer
+
+## Overview
+
+Build a single-page HTML BJJ training timer with embedded CSS and JS. Implementation proceeds bottom-up: utility functions and data models first, then core engine, then UI rendering, overlays, schedule system, and finally wiring everything together. Testing uses Vitest + fast-check for property-based tests.
+
+## Tasks
+
+- [x] 1. Set up project structure and utility functions
+  - [x] 1.1 Create `index.html` with base HTML structure, embedded `<style>` and `<script>` tags, dark theme CSS variables, and responsive layout scaffolding
+    - Define CSS custom properties for dark background, bright text colors
+    - Create semantic HTML sections: clock, round timer, rest timer, round counter, schedule display, help menu
+    - Add responsive font sizing using `vw`/`vh` units for large TV readability
+    - _Requirements: 14.1, 14.2, 14.3, 14.4_
+  - [x] 1.2 Implement `formatTime(totalSeconds)` and `parseTimeInput(minutes, seconds)` utility functions
+    - `formatTime` converts non-negative integer to `MM:SS` zero-padded string
+    - `parseTimeInput` converts minutes and seconds to total seconds
+    - _Requirements: 1.1, 2.1, 3.1_
+  - [ ]* 1.3 Write property test for time formatting (Property 1)
+    - **Property 1: Time formatting produces valid output**
+    - Generate random integers 0–5999, verify `formatTime` output matches `MM:SS` regex and round-trips correctly
+    - **Validates: Requirements 1.1, 2.1, 3.1**
+  - [ ]* 1.4 Write property test for time input parsing (Property 5)
+    - **Property 5: Time input parsing round-trip**
+    - Generate random minutes (0–99) and seconds (0–59), verify `parseTimeInput` then `formatTime` round-trips
+    - **Validates: Requirements 6.3, 7.3**
+  - [ ]* 1.5 Write property test for input validation (Property 7)
+    - **Property 7: Input validation rejects non-numeric strings**
+    - Generate random strings with non-digit characters, verify rejection. Generate digit-only strings, verify acceptance
+    - **Validates: Requirements 6.5, 7.5**
+
+- [x] 2. Implement StorageManager and TimerState model
+  - [x] 2.1 Implement `StorageManager` with `save(config)` and `load()` methods
+    - Serialize/deserialize `TimerConfig` to/from localStorage key `"bjj-timer-config"`
+    - Handle corrupted data by falling back to defaults (round: 300s, rest: 60s, numRounds: 0, prep: 0)
+    - Handle localStorage unavailability gracefully (catch exceptions, use in-memory only)
+    - _Requirements: 6.4, 7.4, 8.1, 8.2, 8.3_
+  - [x] 2.2 Define `TimerState` model object with config, phase, remainingSec, currentRound, intervalId
+    - Initialize with defaults or values loaded from StorageManager
+    - _Requirements: 8.1, 8.2, 8.3_
+  - [ ]* 2.3 Write property test for configuration serialization (Property 6)
+    - **Property 6: Configuration serialization round-trip**
+    - Generate random valid `TimerConfig` objects, verify save then load produces deep-equal result
+    - **Validates: Requirements 6.4, 7.4, 8.3, 12.6**
+
+- [x] 3. Implement TimerEngine with state machine
+  - [x] 3.1 Implement `TimerEngine` class with `start()`, `stop()`, and `tick()` methods
+    - `start()`: Transition IDLE → PREP (if prepDurationSec > 0) or IDLE → ROUND. Set `remainingSec` and start `setInterval` at 1-second intervals
+    - `stop()`: Transition any phase → IDLE, clear interval, reset `remainingSec` to `config.roundDurationSec`, reset `currentRound` to 0
+    - `tick()`: Decrement `remainingSec`. At 0, handle transitions: PREP→ROUND, ROUND→REST, REST→ROUND (if rounds remain), REST→IDLE (if all rounds done)
+    - Enforce zero-duration guard: treat 0 as 1 second minimum
+    - Fire `onTick` and `onPhaseChange` callbacks
+    - _Requirements: 2.3, 3.3, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 13.1, 13.2, 13.3_
+  - [ ]* 3.2 Write property test for tick decrement (Property 2)
+    - **Property 2: Tick decrements remaining time by one**
+    - Generate random phase (PREP/ROUND/REST) and remainingSec (1–5999), verify tick produces remainingSec - 1 with same phase
+    - **Validates: Requirements 2.3, 3.3, 13.2**
+  - [ ]* 3.3 Write property test for state machine transitions (Property 3)
+    - **Property 3: State machine transitions follow defined rules**
+    - Generate random valid configs and states at remainingSec=0, verify resulting phase and remainingSec match state machine diagram
+    - **Validates: Requirements 4.1, 4.2, 5.1, 5.2, 5.4, 13.1, 13.3**
+  - [ ]* 3.4 Write property test for stop reset (Property 4)
+    - **Property 4: Stop resets state to configured values**
+    - Generate random non-IDLE states and configs, verify stop() produces IDLE with correct remainingSec
+    - **Validates: Requirements 4.3**
+  - [ ]* 3.5 Write property test for alert conditions (Property 8)
+    - **Property 8: Alert conditions match remaining time thresholds**
+    - Generate random phase (ROUND/REST) and remainingSec (0–600), verify alert signals match threshold rules (1–5: countdown alert, 0: end-of-phase alert, >5: no alert)
+    - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 10.1, 10.2, 10.3, 10.4**
+
+- [x] 4. Checkpoint - Core engine tests
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. Implement AudioManager and Renderer
+  - [x] 5.1 Implement `AudioManager` with Web Audio API beep generation
+    - Lazy-initialize `AudioContext` on first user gesture
+    - `playCountdownBeep()`: short beep for last 5 seconds
+    - `playEndOfRoundBeep()`: distinct lower-frequency tone for round end
+    - `playEndOfRestBeep()`: distinct higher-frequency tone for rest end
+    - Wrap all oscillator calls in try/catch, disable audio silently on failure
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - [x] 5.2 Implement `Renderer` class for DOM updates
+    - `updateRoundDisplay(remainingSec, isActive)`: Update round timer text and active styling
+    - `updateRestDisplay(remainingSec, isActive)`: Update rest timer text and active styling
+    - `updateClockDisplay()`: Update wall clock in HH:MM:SS format
+    - `showPrepCountdown(remainingSec)` / `hidePrepCountdown()`: Show/hide prep overlay
+    - `applyFlash(element)`: CSS animation flash on timer element for last 5 seconds
+    - `applyScreenFlash()`: Full-screen flash at 0:00 transitions
+    - `updateRoundCounter(current, total)`: Display current round / total rounds
+    - Label round section "ROUND" and rest section "REST"
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 10.1, 10.2, 10.3, 10.4, 13.2, 14.1, 14.3_
+  - [x] 5.3 Implement help menu display in bottom-right corner
+    - Show entries: "0 → Start/Stop Timer", "1 → Customize Round Time", "2 → Customize Rest Time", "* → Advanced Features"
+    - _Requirements: 11.1, 11.2_
+
+- [x] 6. Implement OverlayManager and InputHandler
+  - [x] 6.1 Implement `OverlayManager` for customization overlays
+    - `showTimeEntry(label, callback)`: Two-step modal — prompt for minutes, then seconds. Validate numeric input, show error and re-prompt on invalid input
+    - `showAdvancedMenu(config, callback)`: Display advanced settings — number of rounds, prep countdown duration, IBJJF competition presets (White Belt 5:00, Blue/Purple 6:00, Brown/Black 8:00, Kids 4:00)
+    - `closeOverlay()` and `isOpen()` methods
+    - _Requirements: 6.1, 6.2, 6.3, 6.5, 7.1, 7.2, 7.3, 7.5, 12.1, 12.2, 12.3, 12.4, 12.5_
+  - [x] 6.2 Implement `InputHandler` for numpad key routing
+    - Listen for `keydown` events on `document`
+    - Key 0: Start/stop timer (delegate to TimerEngine)
+    - Key 1: Open round customization overlay
+    - Key 2: Open rest customization overlay
+    - Key *: Open advanced menu
+    - When overlay is open, route all numpad input to overlay
+    - Ignore unrecognized keys without side effects
+    - _Requirements: 4.1, 4.2, 15.1, 15.2, 15.3, 15.4_
+  - [ ]* 6.3 Write property test for competition presets (Property 9)
+    - **Property 9: Competition preset application sets correct values**
+    - For each preset, verify applying it sets exact expected config values and no other fields are modified
+    - **Validates: Requirements 12.5**
+  - [ ]* 6.4 Write property test for numpad key filtering (Property 10)
+    - **Property 10: Only recognized numpad keys trigger actions**
+    - Generate random key codes, verify unrecognized keys leave state unchanged and recognized keys dispatch actions
+    - **Validates: Requirements 15.1, 15.4**
+  - [ ]* 6.5 Write property test for overlay input capture (Property 11)
+    - **Property 11: Overlay captures numpad input when open**
+    - Generate random numpad keys while overlay is open, verify none trigger main timer controls
+    - **Validates: Requirements 15.3**
+
+- [x] 7. Checkpoint - UI and controls tests
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Implement ClassPresetManager and ScheduleManager
+  - [x] 8.1 Implement `ClassPresetManager` with default presets and override support
+    - Define default presets: kids (180s/30s/0), adult_basics (300s/60s/0), adult_advanced (360s/60s/0), marathon_roll (600s/30s/0), open_mat (300s/60s/0)
+    - `getPreset(classType)`: Return TimerPreset for given classType
+    - `applyOverrides(overrides)`: Merge partial overrides from config.json into preset map
+    - `getDefaultPresets()`: Return full default preset map
+    - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.5_
+  - [x] 8.2 Implement `ScheduleManager` for config.json loading and class detection
+    - `loadConfig()`: Fetch `config.json` via HTTP GET, parse JSON, validate entries, cache to localStorage key `"bjj-timer-schedule"`, apply preset overrides
+    - `validateEntry(entry)`: Validate all required fields (dayOfWeek, startTime, endTime, title, classType) with correct types and ranges. Return `{ valid, errors }`. Log invalid entries to console.warn
+    - `getActiveClass(now)`: Return ClassEntry matching current day/time or null. Use first match on overlap
+    - `getNextClass(now)`: Return chronologically next ClassEntry or null
+    - `startPolling()` / `stopPolling()`: 30-second interval to check active class changes
+    - Handle fetch failures, invalid JSON, missing schedule property — display error in Schedule_Display, fall back to cached schedule
+    - _Requirements: 16.1, 16.2, 16.3, 16.4, 17.1, 17.2, 17.3, 21.1, 21.2, 21.3, 21.4, 21.5_
+  - [x] 8.3 Implement `Renderer.updateScheduleDisplay(activeClass, nextClass, errorMsg)` for schedule section
+    - Show active class: title, classType, remaining time
+    - Show next class when no active: title, classType, day, start time
+    - Show "No classes scheduled" when schedule is empty
+    - Show error message on config load failure
+    - _Requirements: 17.4, 20.1, 20.2, 20.3_
+  - [ ]* 8.4 Write property test for Class_Entry validation (Property 12)
+    - **Property 12: Class_Entry validation accepts valid and rejects invalid entries**
+    - Generate random objects with valid and invalid field combinations, verify validateEntry correctly accepts/rejects
+    - **Validates: Requirements 16.2, 16.3**
+  - [ ]* 8.5 Write property test for active class detection (Property 13)
+    - **Property 13: Active class detection returns correct class for current time**
+    - Generate random valid schedules and date/times within class ranges, verify getActiveClass returns correct class
+    - **Validates: Requirements 17.2**
+  - [ ]* 8.6 Write property test for next class detection (Property 14)
+    - **Property 14: Next class detection returns chronologically next class**
+    - Generate random valid schedules and date/times where no class is active, verify getNextClass returns nearest future class
+    - **Validates: Requirements 17.3**
+  - [ ]* 8.7 Write property test for timer preset defaults (Property 15)
+    - **Property 15: Timer preset mapping returns correct defaults for each class type**
+    - Generate random classType values, verify getPreset returns exact defined default values
+    - **Validates: Requirements 18.1, 18.2, 18.3, 18.4, 18.5, 19.1, 19.2**
+  - [ ]* 8.8 Write property test for preset overrides (Property 19)
+    - **Property 19: Preset overrides take precedence over defaults**
+    - Generate random classTypes and partial overrides, verify overridden fields match and non-overridden fields retain defaults
+    - **Validates: Requirements 21.5**
+  - [ ]* 8.9 Write property test for schedule persistence (Property 18)
+    - **Property 18: Schedule persistence round-trip**
+    - Generate random valid Class_Schedule arrays, save to localStorage, load back, verify deep equality
+    - **Validates: Requirements 21.4**
+  - [ ]* 8.10 Write property test for invalid config.json fallback (Property 20)
+    - **Property 20: Invalid config.json triggers graceful fallback**
+    - Generate random invalid JSON strings and objects missing "schedule" property, verify error result and app remains functional
+    - **Validates: Requirements 21.3**
+
+- [x] 9. Checkpoint - Schedule system tests
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. Wire everything together and integrate automatic preset loading
+  - [x] 10.1 Wire all components in the main initialization block
+    - Instantiate StorageManager, load config
+    - Instantiate ClassPresetManager, ScheduleManager, TimerState, TimerEngine, AudioManager, Renderer, OverlayManager, InputHandler
+    - Connect TimerEngine callbacks to Renderer and AudioManager
+    - Connect OverlayManager config changes to StorageManager.save and Renderer updates
+    - Start ScheduleManager polling and initial config.json load
+    - Start the wall clock update via the tick loop
+    - _Requirements: 1.1, 1.2, 8.1, 8.2, 8.3_
+  - [x] 10.2 Implement automatic preset loading on class change
+    - When ScheduleManager detects a new Active_Class and phase is IDLE, apply the class type's preset to TimerState config and update Renderer
+    - When phase is not IDLE, defer preset loading until session stops
+    - On session stop, check for pending class preset and apply if needed
+    - _Requirements: 19.1, 19.2, 19.3, 19.4_
+  - [ ]* 10.3 Write property test for deferred preset loading (Property 16)
+    - **Property 16: Preset loading is deferred during active session**
+    - Generate random non-IDLE states with class changes, verify config unchanged. Generate IDLE states with class changes, verify config updated
+    - **Validates: Requirements 19.3, 19.4**
+  - [ ]* 10.4 Write property test for schedule display rendering (Property 17)
+    - **Property 17: Schedule display renders correct information**
+    - Generate random active classes, verify render output contains title, classType, remaining time. Generate no-active-class states, verify next class info
+    - **Validates: Requirements 17.4, 20.1, 20.2**
+
+- [x] 11. Create sample config.json and finalize
+  - [x] 11.1 Create a sample `config.json` file with a realistic weekly BJJ schedule
+    - Include multiple classes per day, various class types
+    - Include optional `presetOverrides` section
+    - _Requirements: 16.1, 16.4, 21.1, 21.2, 21.5_
+  - [x] 11.2 Add Vitest configuration file (`vitest.config.js`) and test setup
+    - Configure jsdom environment for DOM testing
+    - Set up test file patterns
+    - _Requirements: (testing infrastructure)_
+
+- [x] 12. Final checkpoint - Full integration
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation
+- Property tests validate universal correctness properties from the design document
+- Unit tests validate specific examples and edge cases
+- All code lives in a single `index.html` file with embedded CSS and JS — test files import extracted functions for testability
+- Tests run via `npx vitest --run`

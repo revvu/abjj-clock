@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BJJ Timer</title>
+  <style>
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-overlay: rgba(0, 0, 0, 0.85);
+      --text-primary: #ffffff;
+      --text-round: #00ff88;
+      --text-rest: #ff4444;
+      --text-clock: #8888aa;
+      --text-muted: #666680;
+      --text-label: #aaaacc;
+      --text-help: #555570;
+      --accent-green: #00ff88;
+      --accent-red: #ff4444;
+      --accent-yellow: #ffcc00;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Clock area - top right */
+    #clock-area {
+      position: absolute;
+      top: 2vh;
+      right: 3vw;
+      display: flex;
+      align-items: baseline;
+      gap: 1.5vw;
+      font-size: clamp(1rem, 2.5vw, 3rem);
+      color: var(--text-clock);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #day-of-week {
+      color: var(--text-muted);
+      font-size: 0.7em;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    #temperature {
+      color: var(--text-muted);
+      font-size: 0.7em;
+    }
+
+    /* Main timer area - centered */
+    #timer-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2vh;
+    }
+
+    /* Round timer */
+    #round-section {
+      text-align: center;
+    }
+
+    #round-label {
+      font-size: clamp(1.2rem, 3vw, 4rem);
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      margin-bottom: 0.5vh;
+    }
+
+    #round-timer {
+      font-size: clamp(4rem, 18vw, 20rem);
+      font-weight: 700;
+      color: var(--text-round);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Rest timer */
+    #rest-section {
+      text-align: center;
+      margin-top: 1vh;
+    }
+
+    #rest-label {
+      font-size: clamp(0.9rem, 2vw, 2.5rem);
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      margin-bottom: 0.5vh;
+    }
+
+    #rest-timer {
+      font-size: clamp(2.5rem, 10vw, 12rem);
+      font-weight: 700;
+      color: var(--text-rest);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Round counter */
+    #round-counter {
+      font-size: clamp(0.8rem, 1.8vw, 2rem);
+      color: var(--text-muted);
+      margin-top: 1vh;
+    }
+
+    /* Prep countdown overlay */
+    #prep-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    #prep-overlay.active {
+      display: flex;
+    }
+
+    #prep-countdown {
+      font-size: clamp(6rem, 25vw, 30rem);
+      font-weight: 700;
+      color: var(--accent-yellow);
+    }
+
+    /* Top-left bar: logo + schedule */
+    #top-left-bar {
+      position: absolute;
+      top: 2vh;
+      left: 3vw;
+      display: flex;
+      align-items: center;
+      gap: 1.5vw;
+    }
+
+    #academy-logo {
+      height: clamp(3rem, 6vh, 8rem);
+      width: auto;
+      object-fit: contain;
+    }
+
+    /* Schedule display */
+    #schedule-display {
+      font-size: clamp(0.7rem, 1.4vw, 1.5rem);
+      color: var(--text-muted);
+      max-width: 40vw;
+    }
+
+    #schedule-display .class-title {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
+    }
+
+    #schedule-display .class-type {
+      display: none;
+    }
+
+    #schedule-display .class-time {
+      color: var(--text-muted);
+    }
+
+    /* Class progress circle */
+    #class-progress {
+      position: absolute;
+      top: calc(2vh + clamp(3rem, 6vh, 8rem) + 1.5vh);
+      left: calc(3vw + clamp(3rem, 6vh, 8rem) + 1.5vw);
+      display: none;
+    }
+
+    #class-progress.active {
+      display: block;
+    }
+
+    /* Help menu - bottom right */
+    #help-menu {
+      position: absolute;
+      bottom: 2vh;
+      right: 3vw;
+      font-size: clamp(0.6rem, 1.2vw, 1.2rem);
+      color: var(--text-help);
+      display: grid;
+      grid-template-columns: auto auto auto;
+      gap: 0 0.6em;
+      line-height: 1.8;
+      justify-items: start;
+    }
+
+    #help-menu .help-key {
+      color: var(--text-label);
+      text-align: right;
+      justify-self: end;
+    }
+
+    #help-menu .help-arrow {
+      color: var(--text-help);
+    }
+
+    /* Customization overlay */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    #overlay.active {
+      display: flex;
+    }
+
+    #overlay .overlay-prompt {
+      font-size: clamp(1.5rem, 4vw, 4rem);
+      color: var(--text-primary);
+      margin-bottom: 2vh;
+      text-align: center;
+    }
+
+    #overlay .overlay-input {
+      font-size: clamp(2rem, 8vw, 10rem);
+      color: var(--accent-green);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-height: 1.2em;
+      text-align: center;
+    }
+
+    #overlay .overlay-error {
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
+      color: var(--accent-red);
+      margin-top: 1vh;
+      text-align: center;
+      min-height: 1.5em;
+    }
+
+    #overlay .overlay-hint {
+      font-size: clamp(0.8rem, 1.5vw, 1.5rem);
+      color: var(--text-muted);
+      margin-top: 2vh;
+      text-align: center;
+    }
+
+    #overlay .advanced-menu {
+      text-align: left;
+      line-height: 2.2;
+    }
+
+    #overlay .advanced-menu .menu-title {
+      font-size: clamp(1.5rem, 3.5vw, 3.5rem);
+      color: var(--text-primary);
+      margin-bottom: 2vh;
+      text-align: center;
+    }
+
+    #overlay .advanced-menu .menu-item {
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
+      color: var(--text-label);
+    }
+
+    #overlay .advanced-menu .menu-item .menu-key {
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+
+    #overlay .advanced-menu .menu-section {
+      font-size: clamp(0.9rem, 2vw, 2rem);
+      color: var(--text-muted);
+      margin-top: 2vh;
+      margin-bottom: 0.5vh;
+      border-bottom: 1px solid var(--text-muted);
+      padding-bottom: 0.5vh;
+    }
+
+    /* Screen flash effect */
+    #screen-flash {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    /* Flash animation for timer elements */
+    @keyframes timer-flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .flashing {
+      animation: timer-flash 0.5s ease-in-out;
+    }
+
+    /* Screen flash animation */
+    @keyframes screen-flash {
+      0% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+
+    #screen-flash.active {
+      display: block;
+      animation: screen-flash 0.3s ease-out forwards;
+    }
+
+    /* Pause overlay */
+    #pause-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    #pause-overlay.active {
+      display: flex;
+    }
+
+    #pause-overlay .pause-icon {
+      display: flex;
+      gap: clamp(1rem, 3vw, 4rem);
+    }
+
+    #pause-overlay .pause-bar {
+      width: clamp(1.5rem, 4vw, 5rem);
+      height: clamp(6rem, 18vw, 22rem);
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 0.5rem;
+    }
+
+    /* Rounds over announcement */
+    #rounds-over {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      align-items: center;
+      justify-content: center;
+      z-index: 45;
+    }
+
+    #rounds-over.active {
+      display: flex;
+    }
+
+    #rounds-over .rounds-over-text {
+      font-size: clamp(3rem, 10vw, 12rem);
+      font-weight: 700;
+      color: var(--accent-green);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Round list panel - bottom left */
+    #bottom-left-info {
+      position: absolute;
+      bottom: 2vh;
+      left: 3vw;
+      display: flex;
+      flex-direction: column;
+      gap: 1vh;
+    }
+
+    #round-list {
+      display: none;
+      font-size: clamp(0.6rem, 1.2vw, 1.2rem);
+      color: var(--text-label);
+      line-height: 1.8;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    #round-list.active {
+      display: block;
+    }
+
+    #round-list .round-item {
+      white-space: nowrap;
+    }
+
+    #round-list .round-item.past {
+      opacity: 0.35;
+    }
+
+    #round-list .round-item.current {
+      color: var(--accent-green);
+      font-weight: 700;
+      background: var(--accent-red);
+      color: #fff;
+      padding: 0.1em 0.4em;
+      border-radius: 0.3em;
+    }
+
+    #round-list .round-item .round-num {
+      color: var(--text-muted);
+      display: inline-block;
+      min-width: 2.5em;
+    }
+
+    #next-class-display {
+      font-size: clamp(0.6rem, 1.2vw, 1.2rem);
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    #next-class-display .next-title {
+      color: var(--text-label);
+      font-weight: 600;
+    }
+
+    #next-class-display .next-time {
+      color: var(--text-muted);
+    }
+
+    #next-class-display .next-countdown {
+      color: var(--text-clock);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Clock area - top right -->
+  <div id="clock-area">
+    <span id="day-of-week"></span>
+    <span id="clock">00:00:00</span>
+    <span id="temperature"></span>
+  </div>
+
+  <!-- Main timer area - centered -->
+  <div id="timer-area">
+    <!-- Round timer -->
+    <div id="round-section">
+      <div id="round-label">Round</div>
+      <div id="round-timer">05:00</div>
+    </div>
+
+    <!-- Rest timer -->
+    <div id="rest-section">
+      <div id="rest-label">Rest</div>
+      <div id="rest-timer">01:00</div>
+    </div>
+
+    <!-- Round counter -->
+    <div id="round-counter"></div>
+  </div>
+
+  <!-- Prep countdown overlay -->
+  <div id="prep-overlay">
+    <div id="prep-countdown"></div>
+  </div>
+
+  <!-- Top-left bar: logo + schedule -->
+  <div id="top-left-bar">
+    <img id="academy-logo" src="logo.png" alt="Academy Logo">
+    <div id="schedule-display">
+      <span class="class-title"></span>
+      <span class="class-type"></span>
+      <span class="class-time"></span>
+    </div>
+  </div>
+
+  <!-- Class progress circle - below top-left bar -->
+  <canvas id="class-progress" width="120" height="120"></canvas>
+
+  <!-- Help menu - bottom right -->
+  <div id="help-menu">
+    <span class="help-key" id="enter-pause-key" style="display:none;">Enter</span><span class="help-arrow" id="enter-pause-arrow" style="display:none;"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="enter-pause-label" style="display:none;">Pause</span>
+    <span class="help-key">0</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="start-stop-label">Start</span>
+    <span class="help-key">1</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Round Time</span>
+    <span class="help-key">2</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rest Time</span>
+    <span class="help-key">3</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rounds</span>
+    <span class="help-key">4</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Quick Timer</span>
+    <span class="help-key">5</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="stealth-label">Stealth</span>
+    <span class="help-key">9</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Reset to Default</span>
+    <span class="help-key">*</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Advanced Features</span>
+  </div>
+
+  <!-- Customization / Advanced overlay -->
+  <div id="overlay"></div>
+
+  <!-- Screen flash effect -->
+  <div id="screen-flash"></div>
+
+  <!-- Pause overlay -->
+  <div id="pause-overlay">
+    <div class="pause-icon">
+      <div class="pause-bar"></div>
+      <div class="pause-bar"></div>
+    </div>
+  </div>
+
+  <!-- Rounds over announcement -->
+  <div id="rounds-over">
+    <div class="rounds-over-text">Rounds Over</div>
+  </div>
+
+  <!-- Bottom-left info: round list + next class -->
+  <div id="bottom-left-info">
+    <div id="round-list"></div>
+    <div id="next-class-display"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
