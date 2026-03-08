@@ -115,10 +115,12 @@ const APP_SETTINGS = {
     volume: 0.5
   },
   competitionPresets: {
+    'Kids (under 15)': { roundDurationSec: 240, restDurationSec: 60, numRounds: 0 },
     'White Belt': { roundDurationSec: 300, restDurationSec: 60, numRounds: 0 },
-    'Blue/Purple Belt': { roundDurationSec: 360, restDurationSec: 60, numRounds: 0 },
-    'Brown/Black Belt': { roundDurationSec: 480, restDurationSec: 60, numRounds: 0 },
-    'Kids (under 15)': { roundDurationSec: 240, restDurationSec: 60, numRounds: 0 }
+    'Blue Belt': { roundDurationSec: 360, restDurationSec: 60, numRounds: 0 },
+    'Purple Belt': { roundDurationSec: 420, restDurationSec: 60, numRounds: 0 },
+    'Brown Belt': { roundDurationSec: 480, restDurationSec: 60, numRounds: 0 },
+    'Black Belt': { roundDurationSec: 600, restDurationSec: 60, numRounds: 0 }
   },
   weather: {
     enabled: true,
@@ -636,6 +638,7 @@ class Renderer {
     this.restSectionEl = document.getElementById('rest-section');
     this.clockAreaEl = document.getElementById('clock-area');
     this.roundSectionEl = document.getElementById('round-section');
+    this.presetLabelEl = document.getElementById('preset-label');
     this.stealth = false;
   }
 
@@ -653,6 +656,16 @@ class Renderer {
     }
     if (this.roundTimerEl) {
       this.roundTimerEl.style.opacity = isActive ? '1' : '0.4';
+      const color = (isActive && remainingSec <= 10) ? 'var(--accent-yellow)' : 'var(--text-round)';
+      this.roundTimerEl.style.color = color;
+    }
+    if (this.roundSectionEl) {
+      this.roundSectionEl.classList.toggle('active', isActive);
+      if (isActive && remainingSec <= 10) {
+        this.roundSectionEl.style.borderColor = 'var(--accent-yellow)';
+      } else {
+        this.roundSectionEl.style.borderColor = '';
+      }
     }
   }
 
@@ -670,6 +683,9 @@ class Renderer {
     }
     if (this.restTimerEl) {
       this.restTimerEl.style.opacity = isActive ? '1' : '0.4';
+    }
+    if (this.restSectionEl) {
+      this.restSectionEl.classList.toggle('active', isActive);
     }
   }
 
@@ -832,16 +848,8 @@ class Renderer {
    * @param {boolean} running - True if timer is running (not IDLE)
    */
   updateStartStopLabel(running) {
-    const el = document.getElementById('start-stop-label');
-    if (el) el.textContent = running ? 'Stop' : 'Start';
-    // Show/hide Enter > Pause row
-    const vis = running ? '' : 'none';
-    const epKey = document.getElementById('enter-pause-key');
-    const epArrow = document.getElementById('enter-pause-arrow');
-    const epLabel = document.getElementById('enter-pause-label');
-    if (epKey) epKey.style.display = vis;
-    if (epArrow) epArrow.style.display = vis;
-    if (epLabel) epLabel.style.display = vis;
+    const enterLabel = document.getElementById('start-stop-label');
+    if (enterLabel) enterLabel.textContent = running ? 'Pause' : 'Start';
   }
 
   /**
@@ -868,6 +876,54 @@ class Renderer {
     } else {
       this.roundCounterEl.textContent = `Round ${current} / ${total}`;
     }
+  }
+
+  /**
+   * Update the preset label above the round timer.
+   * Shows the preset name with an icon, or "Custom" with a gear icon.
+   * @param {string|null} name - Preset name or null for custom
+   */
+  updatePresetLabel(name) {
+    if (!this.presetLabelEl) return;
+    const _s = 'width="1.2em" height="1.2em" viewBox="0 0 24 24"';
+
+    if (!name) {
+      // Custom gear icon
+      const gear = `<svg ${_s} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+      this.presetLabelEl.innerHTML = `${gear}Custom`;
+      return;
+    }
+
+    const lower = name.toLowerCase();
+
+    // Belt icon helper
+    const beltIcon = (color) =>
+      `<svg ${_s} fill="none"><rect x="1" y="9" width="22" height="6" rx="1" fill="${color}" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="0.5"/><rect x="10" y="7" width="4" height="10" rx="1" fill="${color}" stroke="${color === '#ffffff' ? '#888' : 'rgba(0,0,0,0.3)'}" stroke-width="0.5"/><line x1="12" y1="17" x2="11" y2="21" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="17" x2="13" y2="21" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+    const kidsIcon = `<svg ${_s} fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v6"/><path d="M9 21l3-7 3 7"/><path d="M7 13l5 2 5-2"/></svg>`;
+
+    // Training icons
+    const chainsawIcon = `<svg ${_s} fill="currentColor"><rect x="2" y="14" width="3" height="8" rx="0.5"/><rect x="7" y="6" width="3" height="16" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="6" width="3" height="16" rx="0.5"/></svg>`;
+    const pyramidIcon = `<svg ${_s} fill="currentColor"><rect x="1" y="16" width="3" height="6" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="5" width="3" height="17" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="16" width="3" height="6" rx="0.5"/></svg>`;
+    const invPyramidIcon = `<svg ${_s} fill="currentColor"><rect x="1" y="5" width="3" height="17" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="16" width="3" height="6" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="5" width="3" height="17" rx="0.5"/></svg>`;
+    const ladderUpIcon = `<svg ${_s} fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.5"/><rect x="7" y="14" width="3" height="8" rx="0.5"/><rect x="12" y="9" width="3" height="13" rx="0.5"/><rect x="17" y="4" width="3" height="18" rx="0.5"/></svg>`;
+    const ladderDownIcon = `<svg ${_s} fill="currentColor"><rect x="2" y="4" width="3" height="18" rx="0.5"/><rect x="7" y="9" width="3" height="13" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="18" width="3" height="4" rx="0.5"/></svg>`;
+
+    let icon = '';
+    if (lower === 'quick timer') icon = `<svg ${_s} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    else if (lower.includes('kid') || lower.includes('child')) icon = kidsIcon;
+    else if (lower.includes('white')) icon = beltIcon('#ffffff');
+    else if (lower.includes('blue')) icon = beltIcon('#1e90ff');
+    else if (lower.includes('purple')) icon = beltIcon('#9b30ff');
+    else if (lower.includes('brown')) icon = beltIcon('#8B4513');
+    else if (lower.includes('black')) icon = beltIcon('#222222');
+    else if (lower === 'chainsaw') icon = chainsawIcon;
+    else if (lower === 'pyramid') icon = pyramidIcon;
+    else if (lower.includes('inv')) icon = invPyramidIcon;
+    else if (lower.includes('ladder up')) icon = ladderUpIcon;
+    else if (lower.includes('ladder down')) icon = ladderDownIcon;
+    else icon = '';
+
+    this.presetLabelEl.innerHTML = `${icon}${name}`;
   }
 
   /**
@@ -1143,7 +1199,7 @@ class OverlayManager {
   constructor() {
     this.overlayEl = document.getElementById('overlay');
     this._open = false;
-    this._mode = null; // 'time-entry' | 'advanced' | 'advanced-sub' | 'training-rounds' | 'training-rest' | 'chainsaw-odd-round' | 'chainsaw-odd-rest' | 'chainsaw-even-round' | 'chainsaw-even-rest'
+    this._mode = null; // 'time-entry' | 'competition' | 'training' | 'training-rounds' | 'training-rest' | 'chainsaw-odd-round' | 'chainsaw-odd-rest' | 'chainsaw-even-round' | 'chainsaw-even-rest'
     this._inputBuffer = '';
     this._timeEntryStep = null; // 'minutes' | 'seconds'
     this._timeEntryLabel = '';
@@ -1220,16 +1276,29 @@ class OverlayManager {
   }
 
   /**
-   * Display the advanced settings overlay with numpad-navigable options.
+   * Display the competition presets overlay.
    * @param {Object} config - Current TimerConfig
-   * @param {function} callback - Called with (updatedConfig) when a setting changes
+   * @param {function} callback - Called with (updatedConfig) when a preset is selected
    */
-  showAdvancedMenu(config, callback) {
+  showCompetitionMenu(config, callback) {
     this._open = true;
-    this._mode = 'advanced';
+    this._mode = 'competition';
     this._advancedConfig = config;
     this._advancedCallback = callback;
-    this._renderAdvancedMenu();
+    this._renderCompetitionMenu();
+  }
+
+  /**
+   * Display the training presets overlay.
+   * @param {Object} config - Current TimerConfig
+   * @param {function} callback - Called with (updatedConfig) when a preset is configured
+   */
+  showTrainingMenu(config, callback) {
+    this._open = true;
+    this._mode = 'training';
+    this._advancedConfig = config;
+    this._advancedCallback = callback;
+    this._renderTrainingMenu();
   }
 
   /**
@@ -1240,8 +1309,8 @@ class OverlayManager {
   handleKey(key) {
     if (!this._open) return;
 
-    // * cancels any overlay except the advanced menu itself
-    if (key === '*' && this._mode !== 'advanced') {
+    // * or / closes any overlay
+    if (key === '*' || key === '/') {
       this.closeOverlay();
       return;
     }
@@ -1250,8 +1319,10 @@ class OverlayManager {
       this._handleTimeEntryKey(key);
     } else if (this._mode === 'rounds-entry') {
       this._handleRoundsEntryKey(key);
-    } else if (this._mode === 'advanced') {
-      this._handleAdvancedKey(key);
+    } else if (this._mode === 'competition') {
+      this._handleCompetitionKey(key);
+    } else if (this._mode === 'training') {
+      this._handleTrainingKey(key);
     } else if (this._mode === 'advanced-sub') {
       this._handleAdvancedSubKey(key);
     } else if (this._mode === 'training-minutes' || this._mode === 'training-rounds' || this._mode === 'training-rest') {
@@ -1403,43 +1474,44 @@ class OverlayManager {
 
   // --- Advanced Menu internals ---
 
-  _handleAdvancedKey(key) {
-    switch (key) {
-      case '0':
-        this.closeOverlay();
-        break;
-      case '5':
-        this._startChainsaw();
-        break;
-      case '6':
-        this._startTrainingPreset('ladder_up');
-        break;
-      case '7':
-        this._startTrainingPreset('ladder_down');
-        break;
-      case '8':
-        this._startTrainingPreset('pyramid');
-        break;
-      case '9':
-        this._startTrainingPreset('inv_pyramid');
-        break;
-      default: {
-        // Dynamic competition presets: keys 1+ map to preset entries
-        const presetIndex = parseInt(key, 10) - 1;
-        const presetNames = Object.keys(APP_SETTINGS.competitionPresets);
-        if (presetIndex >= 0 && presetIndex < presetNames.length) {
-          const preset = APP_SETTINGS.competitionPresets[presetNames[presetIndex]];
-          this._applyPreset(preset.roundDurationSec, preset.restDurationSec, preset.numRounds);
-        }
-        break;
-      }
+  _handleCompetitionKey(key) {
+    const presetIndex = parseInt(key, 10);
+    if (isNaN(presetIndex)) return;
+    const presetNames = Object.keys(APP_SETTINGS.competitionPresets);
+    if (presetIndex >= 0 && presetIndex < presetNames.length) {
+      const name = presetNames[presetIndex];
+      const preset = APP_SETTINGS.competitionPresets[name];
+      this._applyPreset(preset.roundDurationSec, preset.restDurationSec, preset.numRounds, name);
     }
   }
 
-  _applyPreset(roundDurationSec, restDurationSec, numRounds) {
+  _handleTrainingKey(key) {
+    switch (key) {
+      case '0':
+        this._startChainsaw();
+        break;
+      case '1':
+        this._startTrainingPreset('ladder_up');
+        break;
+      case '2':
+        this._startTrainingPreset('ladder_down');
+        break;
+      case '3':
+        this._startTrainingPreset('pyramid');
+        break;
+      case '4':
+        this._startTrainingPreset('inv_pyramid');
+        break;
+      default:
+        break;
+    }
+  }
+
+  _applyPreset(roundDurationSec, restDurationSec, numRounds, presetName) {
     this._advancedConfig.roundDurationSec = roundDurationSec;
     this._advancedConfig.restDurationSec = restDurationSec;
     this._advancedConfig.numRounds = numRounds;
+    this._advancedConfig.presetName = presetName || null;
     const cb = this._advancedCallback;
     const cfg = { ...this._advancedConfig };
     this.closeOverlay();
@@ -1850,44 +1922,20 @@ class OverlayManager {
     return rounds;
   }
 
-  _renderAdvancedMenu() {
+  _renderCompetitionMenu() {
     if (!this.overlayEl) return;
 
-    // SVG icon helpers (inline, 1.2em square, vertically aligned)
-    const _s = 'width="1.2em" height="1.2em" viewBox="0 0 24 24" style="vertical-align:-0.2em;margin-right:0.4em;"';
+    const _s = 'width="1.5em" height="1.5em" viewBox="0 0 24 24" style="vertical-align:-0.2em;"';
 
-    // Belt icon: a horizontal belt with a knot in the center
     const beltIcon = (color) =>
       `<svg ${_s} fill="none"><rect x="1" y="9" width="22" height="6" rx="1" fill="${color}" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="0.5"/><rect x="10" y="7" width="4" height="10" rx="1" fill="${color}" stroke="${color === '#ffffff' ? '#888' : 'rgba(0,0,0,0.3)'}" stroke-width="0.5"/><line x1="12" y1="17" x2="11" y2="21" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="17" x2="13" y2="21" stroke="${color === '#ffffff' ? '#888' : color}" stroke-width="1.5" stroke-linecap="round"/></svg>`;
 
-    // Kids icon: simple child figure
     const kidsIcon =
       `<svg ${_s} fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v6"/><path d="M9 21l3-7 3 7"/><path d="M7 13l5 2 5-2"/></svg>`;
 
-    // Chainsaw icon: alternating short/tall bars
-    const chainsawIcon =
-      `<svg ${_s} fill="currentColor"><rect x="2" y="14" width="3" height="8" rx="0.5"/><rect x="7" y="6" width="3" height="16" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="6" width="3" height="16" rx="0.5"/></svg>`;
-
-    // Pyramid icon: short, taller, tallest, taller, short
-    const pyramidIcon =
-      `<svg ${_s} fill="currentColor"><rect x="1" y="16" width="3" height="6" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="5" width="3" height="17" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="16" width="3" height="6" rx="0.5"/></svg>`;
-
-    // Inverted Pyramid icon: tall, shorter, shortest, shorter, tall
-    const invPyramidIcon =
-      `<svg ${_s} fill="currentColor"><rect x="1" y="5" width="3" height="17" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="16" width="3" height="6" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="5" width="3" height="17" rx="0.5"/></svg>`;
-
-    // Ladder Up icon: growing bars left to right
-    const ladderUpIcon =
-      `<svg ${_s} fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.5"/><rect x="7" y="14" width="3" height="8" rx="0.5"/><rect x="12" y="9" width="3" height="13" rx="0.5"/><rect x="17" y="4" width="3" height="18" rx="0.5"/></svg>`;
-
-    // Ladder Down icon: shrinking bars left to right
-    const ladderDownIcon =
-      `<svg ${_s} fill="currentColor"><rect x="2" y="4" width="3" height="18" rx="0.5"/><rect x="7" y="9" width="3" height="13" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="18" width="3" height="4" rx="0.5"/></svg>`;
-
-    // Map preset names to belt colors
     const beltColorMap = {
       'white': '#ffffff', 'blue': '#1e90ff', 'purple': '#8b5cf6',
-      'brown': '#8B4513', 'black': '#333333', 'kid': null
+      'brown': '#8B4513', 'black': '#333333'
     };
     const getBeltColor = (name) => {
       const lower = name.toLowerCase();
@@ -1896,38 +1944,75 @@ class OverlayManager {
       if (lower.includes('purple')) return beltColorMap['purple'];
       if (lower.includes('brown')) return beltColorMap['brown'];
       if (lower.includes('black')) return beltColorMap['black'];
-      if (lower.includes('kid') || lower.includes('child') || lower.includes('youth')) return null; // use kids icon
-      return '#aaa'; // fallback grey belt
+      if (lower.includes('kid') || lower.includes('child') || lower.includes('youth')) return null;
+      return '#aaa';
     };
 
-    // SVG chevron arrow for menu items
-    const _arrow = '<svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.1em;margin:0 0.3em;"><path d="M4 2l4 4-4 4"/></svg>';
-
-    // Build competition preset items dynamically
     const presetNames = Object.keys(APP_SETTINGS.competitionPresets);
-    let presetItems = '';
+    let rows = '';
     presetNames.forEach((name, i) => {
       const p = APP_SETTINGS.competitionPresets[name];
       const roundStr = formatTime(p.roundDurationSec);
       const restStr = formatTime(p.restDurationSec);
       const color = getBeltColor(name);
       const icon = color === null ? kidsIcon : beltIcon(color);
-      presetItems += `<div class="menu-item"><span class="menu-key">${i + 1}</span> ${_arrow}${icon}${name} (${roundStr} round, ${restStr} rest)</div>`;
+      rows += `<span class="mg-key">${i}</span>` +
+              `<span class="mg-icon">${icon}</span>` +
+              `<span class="mg-name">${name}</span>` +
+              `<span class="mg-note" style="color:var(--text-round);">${roundStr}</span>` +
+              `<span class="mg-note" style="color:var(--text-rest);">${restStr}</span>`;
     });
+
+    const _arrow = '<svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.1em;margin:0 0.3em;"><path d="M4 2l4 4-4 4"/></svg>';
 
     this.overlayEl.innerHTML =
       `<div class="advanced-menu">` +
-        `<div class="menu-title">Advanced Settings</div>` +
-        `<div class="menu-section">Competition Presets</div>` +
-        presetItems +
-        `<div class="menu-section">Training Presets</div>` +
-        `<div class="menu-item"><span class="menu-key">5</span> ${_arrow}${chainsawIcon}Chainsaw (alternating round/rest)</div>` +
-        `<div class="menu-item"><span class="menu-key">6</span> ${_arrow}${ladderUpIcon}Ladder Up (short ${_arrow} long)</div>` +
-        `<div class="menu-item"><span class="menu-key">7</span> ${_arrow}${ladderDownIcon}Ladder Down (long ${_arrow} short)</div>` +
-        `<div class="menu-item"><span class="menu-key">8</span> ${_arrow}${pyramidIcon}Pyramid (short ${_arrow} long ${_arrow} short)</div>` +
-        `<div class="menu-item"><span class="menu-key">9</span> ${_arrow}${invPyramidIcon}Inv. Pyramid (long ${_arrow} short ${_arrow} long)</div>` +
-        `<div class="menu-section"></div>` +
-        `<div class="menu-item"><span class="menu-key">0</span> ${_arrow}Close menu</div>` +
+        `<div class="menu-title">Competition Presets</div>` +
+        `<div class="menu-grid-5">${rows}</div>` +
+        `<div class="menu-close"><span class="menu-key">/</span> ${_arrow} Close</div>` +
+      `</div>`;
+    this.overlayEl.classList.add('active');
+  }
+
+  _renderTrainingMenu() {
+    if (!this.overlayEl) return;
+
+    const _s = 'width="1.5em" height="1.5em" viewBox="0 0 24 24" style="vertical-align:-0.2em;"';
+
+    const chainsawIcon =
+      `<svg ${_s} fill="currentColor"><rect x="2" y="14" width="3" height="8" rx="0.5"/><rect x="7" y="6" width="3" height="16" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="6" width="3" height="16" rx="0.5"/></svg>`;
+    const ladderUpIcon =
+      `<svg ${_s} fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.5"/><rect x="7" y="14" width="3" height="8" rx="0.5"/><rect x="12" y="9" width="3" height="13" rx="0.5"/><rect x="17" y="4" width="3" height="18" rx="0.5"/></svg>`;
+    const ladderDownIcon =
+      `<svg ${_s} fill="currentColor"><rect x="2" y="4" width="3" height="18" rx="0.5"/><rect x="7" y="9" width="3" height="13" rx="0.5"/><rect x="12" y="14" width="3" height="8" rx="0.5"/><rect x="17" y="18" width="3" height="4" rx="0.5"/></svg>`;
+    const pyramidIcon =
+      `<svg ${_s} fill="currentColor"><rect x="1" y="16" width="3" height="6" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="5" width="3" height="17" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="16" width="3" height="6" rx="0.5"/></svg>`;
+    const invPyramidIcon =
+      `<svg ${_s} fill="currentColor"><rect x="1" y="5" width="3" height="17" rx="0.5"/><rect x="5.5" y="11" width="3" height="11" rx="0.5"/><rect x="10" y="16" width="3" height="6" rx="0.5"/><rect x="14.5" y="11" width="3" height="11" rx="0.5"/><rect x="19" y="5" width="3" height="17" rx="0.5"/></svg>`;
+
+    const items = [
+      { key: '0', icon: chainsawIcon, name: 'Chainsaw', note: 'Alternating round/rest' },
+      { key: '1', icon: ladderUpIcon, name: 'Ladder Up', note: 'Short → long' },
+      { key: '2', icon: ladderDownIcon, name: 'Ladder Down', note: 'Long → short' },
+      { key: '3', icon: pyramidIcon, name: 'Pyramid', note: 'Short → long → short' },
+      { key: '4', icon: invPyramidIcon, name: 'Inv. Pyramid', note: 'Long → short → long' }
+    ];
+
+    let rows = '';
+    items.forEach(it => {
+      rows += `<span class="mg-key">${it.key}</span>` +
+              `<span class="mg-icon">${it.icon}</span>` +
+              `<span class="mg-name">${it.name}</span>` +
+              `<span class="mg-note">${it.note}</span>`;
+    });
+
+    const _arrow = '<svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.1em;margin:0 0.3em;"><path d="M4 2l4 4-4 4"/></svg>';
+
+    this.overlayEl.innerHTML =
+      `<div class="advanced-menu">` +
+        `<div class="menu-title">Training Presets</div>` +
+        `<div class="menu-grid">${rows}</div>` +
+        `<div class="menu-close"><span class="menu-key">*</span> ${_arrow} Close</div>` +
       `</div>`;
     this.overlayEl.classList.add('active');
   }
@@ -1976,14 +2061,17 @@ class InputHandler {
       const suffix = code.slice(6); // e.g. '0', '1', ..., '9', 'Multiply', 'Enter', 'Decimal', 'Subtract', 'Add', 'Divide'
       if (suffix >= '0' && suffix <= '9') return suffix;
       if (suffix === 'Multiply') return '*';
+      if (suffix === 'Divide') return '/';
       if (suffix === 'Enter') return 'Enter';
       if (suffix === 'Decimal') return 'Backspace'; // Use decimal as backspace for convenience
+      if (suffix === 'Clear') return 'Clear';
       return null;
     }
 
     // Also accept regular number keys and * for non-numpad keyboards
     if (key >= '0' && key <= '9') return key;
     if (key === '*') return '*';
+    if (key === '/') return '/';
     if (key === 'Enter') return 'Enter';
     if (key === 'Backspace') return 'Backspace';
     if (key === 'Clear' || key === 'Delete') return 'Clear';
@@ -2015,8 +2103,10 @@ class InputHandler {
     event.preventDefault();
     switch (key) {
       case 'Enter':
-        // Pause/resume — only when timer is running
-        if (this.state.phase !== PHASES.IDLE) {
+        // Start (when idle) or Pause/Resume (when running)
+        if (this.state.phase === PHASES.IDLE) {
+          this.engine.start();
+        } else {
           if (this.state.paused) {
             this.engine.resume();
             this.renderer.hidePauseOverlay();
@@ -2027,10 +2117,8 @@ class InputHandler {
         }
         break;
       case '0':
-        if (this.state.phase === PHASES.IDLE) {
-          this.engine.start();
-        } else {
-          // If paused, clear pause state first
+        // Stop — only when timer is running or paused
+        if (this.state.phase !== PHASES.IDLE) {
           if (this.state.paused) {
             this.renderer.hidePauseOverlay();
           }
@@ -2059,6 +2147,7 @@ class InputHandler {
             this.state._presetName = r.presetName || null;
             this.state._quickTimerRestore = null;
             this.renderer.clearQuickTimerMode();
+            this.renderer.updatePresetLabel(this.state._presetName);
             this.renderer.updateRoundDisplay(this.state.config.roundDurationSec, false);
             this.renderer.updateRestDisplay(this.state.config.restDurationSec, false);
             this.renderer.updateRoundCounter(0, this.state.config.numRounds);
@@ -2072,6 +2161,7 @@ class InputHandler {
         // Open round customization overlay
         this.overlayManager.showTimeEntry('ROUND', (totalSeconds) => {
           this.state.config.roundDurationSec = totalSeconds;
+          this._cancelPreset();
           StorageManager.save(this.state.config);
           if (this.state.phase === PHASES.IDLE) {
             this.state.remainingSec = totalSeconds;
@@ -2083,6 +2173,7 @@ class InputHandler {
         // Open rest customization overlay
         this.overlayManager.showTimeEntry('REST', (totalSeconds) => {
           this.state.config.restDurationSec = totalSeconds;
+          this._cancelPreset();
           StorageManager.save(this.state.config);
           if (this.state.phase === PHASES.IDLE) {
             this.renderer.updateRestDisplay(totalSeconds, false);
@@ -2093,6 +2184,7 @@ class InputHandler {
         // Set number of rounds
         this.overlayManager.showRoundsEntry(this.state.config.numRounds, (value) => {
           this.state.config.numRounds = value;
+          this._cancelPreset();
           StorageManager.save(this.state.config);
           this.renderer.updateRoundCounter(
             this.state.phase === PHASES.IDLE ? 0 : this.state.currentRound,
@@ -2120,9 +2212,11 @@ class InputHandler {
             this.state.remainingSec = totalSeconds;
             this.state.roundDurations = null;
             this.state.restDurations = null;
+            this.state._presetName = 'Quick Timer';
             // Update display and auto-start
             this.renderer.updateRoundDisplay(totalSeconds, false);
             this.renderer.updateRoundCounter(0, 1);
+            this.renderer.updatePresetLabel('Quick Timer');
             this.renderer.setQuickTimerMode();
             this.engine.start();
           }, 0);
@@ -2133,75 +2227,108 @@ class InputHandler {
         this.renderer.toggleStealth();
         this.renderer.applyStealth(this.state.phase);
         break;
-      case '9':
-        // Reset everything to class default (or main default)
+      case 'Clear':
+        // Cancel any timer and reset all defaults (for the current class if any)
         if (this.state.phase !== PHASES.IDLE) {
+          if (this.state.paused) {
+            this.renderer.hidePauseOverlay();
+          }
           this.engine.stop();
         }
         this.state.roundDurations = null;
         this.state.restDurations = null;
         this.state._presetName = null;
+        this.state._quickTimerRestore = null;
         this.state.paused = false;
         if (this._resetCallback) {
           this._resetCallback();
         } else {
-          // Fallback to DEFAULT_CONFIG
           this.state.config.roundDurationSec = DEFAULT_CONFIG.roundDurationSec;
           this.state.config.restDurationSec = DEFAULT_CONFIG.restDurationSec;
           this.state.config.numRounds = DEFAULT_CONFIG.numRounds;
           this.state.remainingSec = DEFAULT_CONFIG.roundDurationSec;
           StorageManager.save(this.state.config);
         }
+        this.renderer.clearQuickTimerMode();
         this.renderer.updateRoundDisplay(this.state.config.roundDurationSec, false);
         this.renderer.updateRestDisplay(this.state.config.restDurationSec, false);
         this.renderer.updateRoundCounter(0, this.state.config.numRounds);
+        this.renderer.updatePresetLabel(this.state._presetName);
         this.renderer.hidePrepCountdown();
         this.renderer.hideRoundList();
         this.renderer.hidePauseOverlay();
         this.renderer.hideRoundsOver();
         break;
+      case '/':
+        // Toggle competition presets menu
+        if (this.overlayManager.isOpen()) {
+          this.overlayManager.closeOverlay();
+        } else {
+          this.overlayManager.showCompetitionMenu({ ...this.state.config }, (updatedConfig) => {
+            this._applyMenuConfig(updatedConfig);
+          });
+        }
+        break;
       case '*':
-        // Open advanced menu
-        this.overlayManager.showAdvancedMenu({ ...this.state.config }, (updatedConfig) => {
-          this.state.config.roundDurationSec = updatedConfig.roundDurationSec;
-          this.state.config.restDurationSec = updatedConfig.restDurationSec;
-          this.state.config.numRounds = updatedConfig.numRounds;
-          this.state.config.prepDurationSec = updatedConfig.prepDurationSec;
-          // Handle training preset round durations
-          if (updatedConfig.roundDurations) {
-            this.state.roundDurations = updatedConfig.roundDurations;
-            this.state.config.roundDurationSec = updatedConfig.roundDurations[0];
-          } else {
-            this.state.roundDurations = null;
-          }
-          // Handle chainsaw rest durations
-          if (updatedConfig.restDurations) {
-            this.state.restDurations = updatedConfig.restDurations;
-          } else {
-            this.state.restDurations = null;
-          }
-          // Track preset name for round list header
-          this.state._presetName = updatedConfig.presetName || null;
-          StorageManager.save(this.state.config);
-          if (this.state.phase === PHASES.IDLE) {
-            this.state.remainingSec = this.state.config.roundDurationSec;
-            this.renderer.updateRoundDisplay(this.state.config.roundDurationSec, false);
-            this.renderer.updateRestDisplay(this.state.config.restDurationSec, false);
-            this.renderer.updateRoundCounter(0, this.state.config.numRounds);
-            // Show round list preview if training preset
-            if (this.state.roundDurations) {
-              this.renderer.updateRoundList(this.state.roundDurations, 0, this.state._presetName);
-            } else {
-              this.renderer.hideRoundList();
-            }
-          }
-        });
+        // Toggle training presets menu
+        if (this.overlayManager.isOpen()) {
+          this.overlayManager.closeOverlay();
+        } else {
+          this.overlayManager.showTrainingMenu({ ...this.state.config }, (updatedConfig) => {
+            this._applyMenuConfig(updatedConfig);
+          });
+        }
         break;
       default:
         // Ignore other recognized but unhandled keys (e.g. 3-9 when no overlay)
         break;
     }
   }
+
+  /**
+   * Apply config from a competition or training preset menu callback.
+   * @param {Object} updatedConfig
+   */
+  _applyMenuConfig(updatedConfig) {
+    this.state.config.roundDurationSec = updatedConfig.roundDurationSec;
+    this.state.config.restDurationSec = updatedConfig.restDurationSec;
+    this.state.config.numRounds = updatedConfig.numRounds;
+    this.state.config.prepDurationSec = updatedConfig.prepDurationSec;
+    if (updatedConfig.roundDurations) {
+      this.state.roundDurations = updatedConfig.roundDurations;
+      this.state.config.roundDurationSec = updatedConfig.roundDurations[0];
+    } else {
+      this.state.roundDurations = null;
+    }
+    if (updatedConfig.restDurations) {
+      this.state.restDurations = updatedConfig.restDurations;
+    } else {
+      this.state.restDurations = null;
+    }
+    this.state._presetName = updatedConfig.presetName || null;
+    this.renderer.updatePresetLabel(this.state._presetName);
+    StorageManager.save(this.state.config);
+    if (this.state.phase === PHASES.IDLE) {
+      this.state.remainingSec = this.state.config.roundDurationSec;
+      this.renderer.updateRoundDisplay(this.state.config.roundDurationSec, false);
+      this.renderer.updateRestDisplay(this.state.config.restDurationSec, false);
+      this.renderer.updateRoundCounter(0, this.state.config.numRounds);
+      if (this.state.roundDurations) {
+        this.renderer.updateRoundList(this.state.roundDurations, 0, this.state._presetName);
+      } else {
+        this.renderer.hideRoundList();
+      }
+    }
+  }
+  _cancelPreset() {
+    this.state._presetName = null;
+    this.state.roundDurations = null;
+    this.state.restDurations = null;
+    this.renderer.updatePresetLabel(null);
+    this.renderer.hideRoundList();
+  }
+
+
 
   /**
    * Remove the keydown listener (for cleanup/testing).
@@ -2272,7 +2399,7 @@ class WeatherManager {
 // --- Schedule Constants ---
 
 const VALID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const VALID_CLASS_TYPES = ['kids', 'adult_basics', 'adult_advanced', 'marathon_roll', 'open_mat'];
+const VALID_CLASS_TYPES = ['kids', 'kids_advanced', 'kids_nogi', 'adult_basics', 'adult_all_levels', 'adult_advanced', 'drill', 'marathon_roll', 'open_mat'];
 const SCHEDULE_STORAGE_KEY = 'bjj-timer-schedule';
 
 // --- ClassPresetManager ---
@@ -2285,8 +2412,12 @@ class ClassPresetManager {
   constructor() {
     this._presets = {
       kids:            { roundDurationSec: 180, restDurationSec: 30, numRounds: 0 },
+      kids_advanced:   { roundDurationSec: 180, restDurationSec: 30, numRounds: 0 },
+      kids_nogi:       { roundDurationSec: 180, restDurationSec: 30, numRounds: 0 },
       adult_basics:    { roundDurationSec: 300, restDurationSec: 60, numRounds: 0 },
+      adult_all_levels:{ roundDurationSec: 300, restDurationSec: 60, numRounds: 0 },
       adult_advanced:  { roundDurationSec: 360, restDurationSec: 60, numRounds: 0 },
+      drill:           { roundDurationSec: 300, restDurationSec: 60, numRounds: 0 },
       marathon_roll:   { roundDurationSec: 600, restDurationSec: 30, numRounds: 0 },
       open_mat:        { roundDurationSec: 300, restDurationSec: 60, numRounds: 0 }
     };
@@ -2640,8 +2771,12 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       // Map title to a classType (best guess)
       const titleLower = title.toLowerCase();
       let classType = 'adult_basics';
-      if (titleLower.includes('kid')) classType = 'kids';
+      if (titleLower.includes('kid') && titleLower.includes('advanced')) classType = 'kids_advanced';
+      else if (titleLower.includes('kid') && titleLower.includes('no-gi')) classType = 'kids_nogi';
+      else if (titleLower.includes('kid')) classType = 'kids';
       else if (titleLower.includes('advanced')) classType = 'adult_advanced';
+      else if (titleLower.includes('all level')) classType = 'adult_all_levels';
+      else if (titleLower.includes('drill')) classType = 'drill';
       else if (titleLower.includes('marathon')) classType = 'marathon_roll';
       else if (titleLower.includes('open')) classType = 'open_mat';
 
@@ -2724,6 +2859,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           s._presetName = r.presetName || null;
           s._quickTimerRestore = null;
           renderer.clearQuickTimerMode();
+          renderer.updatePresetLabel(s._presetName);
           renderer.updateRoundDisplay(s.config.roundDurationSec, false);
           renderer.updateRestDisplay(s.config.restDurationSec, false);
           renderer.updateRoundCounter(0, s.config.numRounds);
@@ -2806,17 +2942,37 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         if (activeClass) {
           hadActiveClass = true;
           if (state.phase === PHASES.IDLE) {
-            // Apply preset immediately (Req 19.4)
-            const preset = presetManager.getPreset(activeClass.classType);
-            if (preset) {
-              state.config.roundDurationSec = preset.roundDurationSec;
-              state.config.restDurationSec = preset.restDurationSec;
-              state.config.numRounds = preset.numRounds;
-              state.remainingSec = preset.roundDurationSec;
-              StorageManager.save(state.config);
-              renderer.updateRoundDisplay(state.config.roundDurationSec, false);
-              renderer.updateRestDisplay(state.config.restDurationSec, false);
-              renderer.updateRoundCounter(0, state.config.numRounds);
+            // Open Mat: use Blue Belt competition preset and auto-start
+            if (activeClass.classType === 'open_mat') {
+              const blueBelt = APP_SETTINGS.competitionPresets['Blue Belt'];
+              if (blueBelt) {
+                state.config.roundDurationSec = blueBelt.roundDurationSec;
+                state.config.restDurationSec = blueBelt.restDurationSec;
+                state.config.numRounds = blueBelt.numRounds;
+                state.remainingSec = blueBelt.roundDurationSec;
+                StorageManager.save(state.config);
+                renderer.updateRoundDisplay(state.config.roundDurationSec, false);
+                renderer.updateRestDisplay(state.config.restDurationSec, false);
+                renderer.updateRoundCounter(0, state.config.numRounds);
+              }
+              state._presetName = activeClass.title;
+              renderer.updatePresetLabel(activeClass.title);
+              engine.start();
+            } else {
+              // Apply preset immediately (Req 19.4)
+              const preset = presetManager.getPreset(activeClass.classType);
+              if (preset) {
+                state.config.roundDurationSec = preset.roundDurationSec;
+                state.config.restDurationSec = preset.restDurationSec;
+                state.config.numRounds = preset.numRounds;
+                state.remainingSec = preset.roundDurationSec;
+                StorageManager.save(state.config);
+                renderer.updateRoundDisplay(state.config.roundDurationSec, false);
+                renderer.updateRestDisplay(state.config.restDurationSec, false);
+                renderer.updateRoundCounter(0, state.config.numRounds);
+              }
+              state._presetName = activeClass.title;
+              renderer.updatePresetLabel(activeClass.title);
             }
           } else {
             // Defer preset loading until session stops (Req 19.3)
@@ -2849,6 +3005,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       state.config.restDurationSec = src.restDurationSec;
       state.config.numRounds = src.numRounds;
       state.remainingSec = src.roundDurationSec;
+      state._presetName = active ? active.title : null;
       StorageManager.save(state.config);
     };
 
@@ -2857,6 +3014,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     renderer.updateRoundDisplay(state.config.roundDurationSec, false);
     renderer.updateRestDisplay(state.config.restDurationSec, false);
     renderer.updateRoundCounter(0, state.config.numRounds);
+    renderer.updatePresetLabel(null);
 
     // 10. Load schedule from config.json and start polling
     const initSchedule = isDebug && debugScheduleEntry

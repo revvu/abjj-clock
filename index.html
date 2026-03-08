@@ -10,13 +10,13 @@
       --bg-secondary: #16213e;
       --bg-overlay: rgba(0, 0, 0, 0.85);
       --text-primary: #ffffff;
-      --text-round: #00ff88;
+      --text-round: #00cc44;
       --text-rest: #ff4444;
       --text-clock: #8888aa;
       --text-muted: #666680;
       --text-label: #aaaacc;
       --text-help: #555570;
-      --accent-green: #00ff88;
+      --accent-green: #00cc44;
       --accent-red: #ff4444;
       --accent-yellow: #ffcc00;
     }
@@ -78,6 +78,19 @@
       gap: 2vh;
     }
 
+    /* Preset label */
+    #preset-label {
+      font-size: clamp(0.8rem, 1.8vw, 2rem);
+      color: var(--text-muted);
+      text-align: center;
+      min-height: 1.5em;
+    }
+
+    #preset-label svg {
+      vertical-align: -0.15em;
+      margin-right: 0.4em;
+    }
+
     /* Round timer */
     #round-section {
       text-align: center;
@@ -119,6 +132,19 @@
       color: var(--text-rest);
       line-height: 1;
       font-variant-numeric: tabular-nums;
+    }
+
+    /* Active timer border */
+    #round-section.active {
+      border: 2px solid var(--text-round);
+      border-radius: 0.5rem;
+      padding: 0.5vh 1vw;
+    }
+
+    #rest-section.active {
+      border: 2px solid var(--text-rest);
+      border-radius: 0.5rem;
+      padding: 0.5vh 1vw;
     }
 
     /* Round counter */
@@ -271,7 +297,6 @@
 
     #overlay .advanced-menu {
       text-align: left;
-      line-height: 2.2;
     }
 
     #overlay .advanced-menu .menu-title {
@@ -281,23 +306,57 @@
       text-align: center;
     }
 
-    #overlay .advanced-menu .menu-item {
+    #overlay .advanced-menu .menu-grid {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      gap: 0.8vh 2.5vw;
+      align-items: center;
       font-size: clamp(1rem, 2.5vw, 2.5rem);
+    }
+
+    #overlay .advanced-menu .menu-grid-5 {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto auto;
+      gap: 0.8vh 2.5vw;
+      align-items: center;
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
+    }
+
+    #overlay .advanced-menu .menu-grid .mg-key,
+    #overlay .advanced-menu .menu-grid-5 .mg-key {
+      color: var(--accent-green);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    #overlay .advanced-menu .menu-grid .mg-icon,
+    #overlay .advanced-menu .menu-grid-5 .mg-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #overlay .advanced-menu .menu-grid .mg-name,
+    #overlay .advanced-menu .menu-grid-5 .mg-name {
       color: var(--text-label);
     }
 
-    #overlay .advanced-menu .menu-item .menu-key {
-      color: var(--accent-green);
-      font-weight: 700;
+    #overlay .advanced-menu .menu-grid .mg-note,
+    #overlay .advanced-menu .menu-grid-5 .mg-note {
+      color: var(--text-muted);
+      font-size: 0.75em;
     }
 
-    #overlay .advanced-menu .menu-section {
-      font-size: clamp(0.9rem, 2vw, 2rem);
-      color: var(--text-muted);
+    #overlay .advanced-menu .menu-close {
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
+      color: var(--text-label);
       margin-top: 2vh;
-      margin-bottom: 0.5vh;
-      border-bottom: 1px solid var(--text-muted);
-      padding-bottom: 0.5vh;
+      text-align: center;
+    }
+
+    #overlay .advanced-menu .menu-close .menu-key {
+      color: var(--accent-green);
+      font-weight: 700;
     }
 
     /* Screen flash effect */
@@ -356,6 +415,18 @@
       height: clamp(6rem, 18vw, 22rem);
       background: rgba(255, 255, 255, 0.7);
       border-radius: 0.5rem;
+    }
+
+    #pause-overlay .pause-help {
+      position: absolute;
+      bottom: 4vh;
+      font-size: clamp(0.8rem, 1.5vw, 1.5rem);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    #pause-overlay .pause-help-key {
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 700;
     }
 
     /* Rounds over announcement */
@@ -458,6 +529,9 @@
 
   <!-- Main timer area - centered -->
   <div id="timer-area">
+    <!-- Preset label -->
+    <div id="preset-label"></div>
+
     <!-- Round timer -->
     <div id="round-section">
       <div id="round-label">Round</div>
@@ -494,15 +568,16 @@
 
   <!-- Help menu - bottom right -->
   <div id="help-menu">
-    <span class="help-key" id="enter-pause-key" style="display:none;">Enter</span><span class="help-arrow" id="enter-pause-arrow" style="display:none;"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="enter-pause-label" style="display:none;">Pause</span>
-    <span class="help-key">0</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="start-stop-label">Start</span>
+    <span class="help-key">Enter</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="start-stop-label">Start</span>
+    <span class="help-key">0</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Stop</span>
     <span class="help-key">1</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Round Time</span>
     <span class="help-key">2</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rest Time</span>
     <span class="help-key">3</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rounds</span>
     <span class="help-key">4</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Quick Timer</span>
     <span class="help-key">5</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="stealth-label">Stealth</span>
-    <span class="help-key">9</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Reset to Default</span>
-    <span class="help-key">*</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Advanced Features</span>
+    <span class="help-key">/</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Competition Presets</span>
+    <span class="help-key">*</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Training Presets</span>
+    <span class="help-key">Clear</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Cancel &amp; Reset</span>
   </div>
 
   <!-- Customization / Advanced overlay -->
@@ -516,6 +591,10 @@
     <div class="pause-icon">
       <div class="pause-bar"></div>
       <div class="pause-bar"></div>
+    </div>
+    <div class="pause-help">
+      <span class="pause-help-key">Enter</span> Resume
+      <span style="margin-left:1.5em;" class="pause-help-key">0</span> Stop
     </div>
   </div>
 
