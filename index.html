@@ -516,6 +516,67 @@
     #next-class-display .next-countdown {
       color: var(--text-clock);
     }
+
+    /* Schedule overlay */
+    .schedule-overlay {
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    .schedule-title {
+      font-size: clamp(1.5rem, 3.5vw, 3.5rem);
+      color: var(--text-primary);
+      margin-bottom: 2vh;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.8vw;
+    }
+
+    .sched-day {
+      text-align: center;
+    }
+
+    .sched-day-name {
+      font-size: clamp(0.8rem, 1.6vw, 1.6rem);
+      color: var(--accent-green);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding-bottom: 0.8vh;
+      border-bottom: 1px solid var(--text-muted);
+      margin-bottom: 0.8vh;
+    }
+
+    .sched-class {
+      display: flex;
+      flex-direction: column;
+      padding: 0.4vh 0;
+    }
+
+    .sched-time {
+      font-size: clamp(0.55rem, 1.1vw, 1.1rem);
+      color: var(--text-muted);
+    }
+
+    .sched-title {
+      font-size: clamp(0.6rem, 1.2vw, 1.2rem);
+      color: var(--text-label);
+      font-weight: 600;
+    }
+
+    .sched-empty {
+      color: var(--text-muted);
+      font-size: clamp(0.6rem, 1.2vw, 1.2rem);
+    }
+
+    .schedule-hint {
+      font-size: clamp(0.7rem, 1.3vw, 1.3rem);
+      color: var(--text-muted);
+      margin-top: 2vh;
+    }
   </style>
 </head>
 <body>
@@ -575,6 +636,7 @@
     <span class="help-key">3</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rounds</span>
     <span class="help-key">4</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Quick Timer</span>
     <span class="help-key">5</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="stealth-label">Stealth</span>
+    <span class="help-key">9</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Class Schedule</span>
     <span class="help-key">/</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Competition Presets</span>
     <span class="help-key">*</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Training Presets</span>
     <span class="help-key">Clear</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Cancel &amp; Reset</span>

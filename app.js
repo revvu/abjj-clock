@@ -1310,6 +1310,12 @@ class OverlayManager {
   handleKey(key) {
     if (!this._open) return;
 
+    // Schedule overlay: any key closes
+    if (this._mode === 'schedule') {
+      this.closeOverlay();
+      return;
+    }
+
     // * or / closes any overlay
     if (key === '*' || key === '/') {
       this.closeOverlay();
@@ -2023,6 +2029,55 @@ class OverlayManager {
       `</div>`;
     this.overlayEl.classList.add('active');
   }
+
+  showSchedule(schedule) {
+    this._open = true;
+    this._mode = 'schedule';
+    this._scheduleData = schedule;
+    this._renderSchedule();
+  }
+
+  _renderSchedule() {
+    if (!this.overlayEl) return;
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayAbbr = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+    const byDay = {};
+    days.forEach(d => byDay[d] = []);
+    (this._scheduleData || []).forEach(e => {
+      if (byDay[e.dayOfWeek]) byDay[e.dayOfWeek].push(e);
+    });
+    // Sort each day by startTime
+    days.forEach(d => byDay[d].sort((a, b) => a.startTime.localeCompare(b.startTime)));
+
+    const fmt = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'pm' : 'am';
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      return m === 0 ? `${h12}${suffix}` : `${h12}:${m.toString().padStart(2, '0')}${suffix}`;
+    };
+
+    let cols = '';
+    days.forEach(d => {
+      let cells = '';
+      byDay[d].forEach(e => {
+        cells += `<div class="sched-class">`
+          + `<span class="sched-time">${fmt(e.startTime)}–${fmt(e.endTime)}</span>`
+          + `<span class="sched-title">${e.title}</span>`
+          + `</div>`;
+      });
+      if (!byDay[d].length) cells = '<div class="sched-class sched-empty">—</div>';
+      cols += `<div class="sched-day"><div class="sched-day-name">${dayAbbr[d]}</div>${cells}</div>`;
+    });
+
+    this.overlayEl.innerHTML =
+      `<div class="schedule-overlay">`
+      + `<div class="schedule-title">Weekly Schedule</div>`
+      + `<div class="schedule-grid">${cols}</div>`
+      + `<div class="schedule-hint">Press any key to close</div>`
+      + `</div>`;
+    this.overlayEl.classList.add('active');
+  }
+
 }
 
 // --- InputHandler ---
@@ -2233,6 +2288,12 @@ class InputHandler {
         // Toggle stealth mode
         this.renderer.toggleStealth();
         this.renderer.applyStealth(this.state.phase);
+        break;
+      case '9':
+        // Show weekly class schedule
+        if (this._scheduleManager) {
+          this.overlayManager.showSchedule(this._scheduleManager._schedule);
+        }
         break;
       case 'Clear':
         // Cancel any timer and reset all defaults (for the current class if any)
@@ -3003,6 +3064,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     );
 
     // 8b. Wire up key 9 reset: use active class preset or fall back to DEFAULT_CONFIG
+    inputHandler._scheduleManager = scheduleManager;
     inputHandler._resetCallback = () => {
       const now = new Date();
       const active = scheduleManager.getActiveClass(now);
