@@ -119,7 +119,7 @@
       color: var(--text-label);
       text-transform: uppercase;
       letter-spacing: 0.3em;
-      margin-bottom: 1.5vh;
+      margin-bottom: 2vh;
     }
 
     #round-timer {
@@ -142,7 +142,7 @@
       color: var(--text-label);
       text-transform: uppercase;
       letter-spacing: 0.3em;
-      margin-bottom: 1.5vh;
+      margin-bottom: 2vh;
     }
 
     #rest-timer {
@@ -666,16 +666,20 @@
   <!-- Help menu - bottom right -->
   <div id="help-menu">
     <span class="help-key">Enter</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="start-stop-label">Start</span>
-    <span class="help-key">0</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Stop</span>
+    <span class="help-key">0</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Cancel</span>
+    <div style="grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,0.15); margin: 0.2em 0; width: 100%; min-width: 100%;"></div>
     <span class="help-key">1</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Round Time</span>
     <span class="help-key">2</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rest Time</span>
     <span class="help-key">3</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Set Rounds</span>
-    <span class="help-key">4</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Quick Timer</span>
-    <span class="help-key">5</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="stealth-label">Stealth</span>
+    <div style="grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,0.15); margin: 0.2em 0; width: 100%; min-width: 100%;"></div>
+    <span class="help-key">7</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Quick Timer</span>
+    <span class="help-key">8</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span id="stealth-label">Stealth</span>
     <span class="help-key">9</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Class Schedule</span>
+    <div style="grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,0.15); margin: 0.2em 0; width: 100%; min-width: 100%;"></div>
     <span class="help-key">/</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Competition Presets</span>
     <span class="help-key">*</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Training Presets</span>
-    <span class="help-key">Clear</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Cancel &amp; Reset</span>
+    <div style="grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,0.15); margin: 0.2em 0; width: 100%; min-width: 100%;"></div>
+    <span class="help-key">Clear</span><span class="help-arrow"><svg width="0.8em" height="0.8em" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span><span>Reset</span>
   </div>
 
   <!-- Customization / Advanced overlay -->
@@ -692,7 +696,7 @@
     </div>
     <div class="pause-help">
       <span class="pause-help-key">Enter</span> Resume
-      <span style="margin-left:1.5em;" class="pause-help-key">0</span> Stop
+      <span style="margin-left:1.5em;" class="pause-help-key">0</span> Cancel
     </div>
   </div>
 

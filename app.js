@@ -2367,7 +2367,7 @@ class InputHandler {
           );
         });
         break;
-      case '4':
+      case '7':
         // Quick timer — one-shot countdown, then restore previous config
         if (this.state.phase === PHASES.IDLE) {
           this.overlayManager.showTimeEntry('QUICK TIMER', (totalSeconds) => {
@@ -2397,7 +2397,7 @@ class InputHandler {
           }, 0);
         }
         break;
-      case '5':
+      case '8':
         // Toggle stealth mode
         this.renderer.toggleStealth();
         this.renderer.applyStealth(this.state.phase);
