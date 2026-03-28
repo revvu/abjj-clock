@@ -3,8 +3,7 @@
     "roundDurationSec": 360,
     "restDurationSec": 60,
     "numRounds": 0,
-    "prepDurationSec": 1,
-    "minPrepCountdownSec": 1,
+    "prepDurationSec": 0,
     "alertThresholdSec": 5
   },
   "audio": {
@@ -24,7 +23,7 @@
     ],
     "fanfareNoteDuration": 0.3,
     "fanfareNoteGap": 0.12,
-    "volume": 0.5
+    "volume": 1.0
   },
   "competitionPresets": {
     "Kids (under 15)": {

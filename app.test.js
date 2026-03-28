@@ -284,20 +284,24 @@ describe('TimerEngine', () => {
   });
 
   describe('start()', () => {
-    it('transitions from IDLE to PREP', () => {
+    it('transitions from IDLE to PREP when prepDurationSec > 0', () => {
+      state.config.prepDurationSec = 5;
       engine.start();
       expect(state.phase).toBe(PHASES.PREP);
       expect(phaseCb).toHaveBeenCalledWith(state, PHASES.IDLE, PHASES.PREP);
     });
 
-    it('uses minPrepCountdownSec as minimum prep duration', () => {
+    it('skips prep and goes straight to ROUND when prepDurationSec is 0', () => {
       engine.start();
-      expect(state.remainingSec).toBe(APP_SETTINGS.minPrepCountdownSec);
+      expect(state.phase).toBe(PHASES.ROUND);
+      expect(state.currentRound).toBe(1);
+      expect(state.remainingSec).toBe(5);
     });
 
-    it('uses configured prepDurationSec if larger than minimum', () => {
+    it('uses configured prepDurationSec for prep countdown', () => {
       state.config.prepDurationSec = 10;
       engine.start();
+      expect(state.phase).toBe(PHASES.PREP);
       expect(state.remainingSec).toBe(10);
     });
 
@@ -409,9 +413,10 @@ describe('TimerEngine', () => {
     });
 
     it('transitions PREP → ROUND when prep reaches 0', () => {
+      state.config.prepDurationSec = 5;
       engine.start();
       // Tick through all prep seconds
-      for (let i = 0; i < APP_SETTINGS.minPrepCountdownSec; i++) {
+      for (let i = 0; i < state.config.prepDurationSec; i++) {
         engine.tick();
       }
       expect(state.phase).toBe(PHASES.ROUND);

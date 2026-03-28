@@ -98,7 +98,6 @@ const DEFAULT_CONFIG = {
 // App-wide configurable settings (overridden by config.json at runtime)
 const APP_SETTINGS = {
   scheduleEnabled: localStorage.getItem('bjj-timer-schedule-enabled') !== 'false',
-  minPrepCountdownSec: 5,
   alertThresholdSec: 5,
   audio: {
     countdownBeepFrequency: 800,
@@ -146,7 +145,6 @@ function applyConfigSettings(data) {
     if (typeof d.restDurationSec === 'number') DEFAULT_CONFIG.restDurationSec = d.restDurationSec;
     if (typeof d.numRounds === 'number') DEFAULT_CONFIG.numRounds = d.numRounds;
     if (typeof d.prepDurationSec === 'number') DEFAULT_CONFIG.prepDurationSec = d.prepDurationSec;
-    if (typeof d.minPrepCountdownSec === 'number') APP_SETTINGS.minPrepCountdownSec = d.minPrepCountdownSec;
     if (typeof d.alertThresholdSec === 'number') APP_SETTINGS.alertThresholdSec = d.alertThresholdSec;
   }
 
@@ -291,13 +289,22 @@ class TimerEngine {
     }
 
     const oldPhase = this.state.phase;
-    const prepDuration = Math.max(this.state.config.prepDurationSec, APP_SETTINGS.minPrepCountdownSec);
+    const prepDuration = this.state.config.prepDurationSec;
 
-    this.state.phase = PHASES.PREP;
-    this.state.remainingSec = prepDuration;
-    this.state.currentRound = 0;
-
-    this.onPhaseChange(this.state, oldPhase, this.state.phase);
+    if (prepDuration > 0) {
+      // Start with prep countdown
+      this.state.phase = PHASES.PREP;
+      this.state.remainingSec = prepDuration;
+      this.state.currentRound = 0;
+      this.onPhaseChange(this.state, oldPhase, this.state.phase);
+    } else {
+      // Skip prep, go straight to round
+      this.state.phase = PHASES.ROUND;
+      const rd = this.state.roundDurations;
+      this.state.remainingSec = rd ? Math.max(rd[0], 1) : Math.max(this.state.config.roundDurationSec, 1);
+      this.state.currentRound = 1;
+      this.onPhaseChange(this.state, oldPhase, this.state.phase);
+    }
 
     this.state.intervalId = setInterval(() => {
       this.tick();
@@ -477,9 +484,8 @@ class AudioManager {
       const now = this.audioCtx.currentTime;
       osc.type = 'sine';
       osc.frequency.value = frequency;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(vol, now + 0.01);
-      gain.gain.setValueAtTime(vol, now + duration - 0.02);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.setValueAtTime(vol, now + Math.max(0, duration - 0.05));
       gain.gain.linearRampToValueAtTime(0, now + duration);
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
@@ -494,42 +500,15 @@ class AudioManager {
    * Short beep for countdown (configurable frequency/duration).
    */
   playCountdownBeep() {
-    try {
-      if (!this._ensureContext()) return;
-      const ctx = this.audioCtx;
-      const now = ctx.currentTime;
-      const vol = APP_SETTINGS.audio.volume;
-
-      const osc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.value = 440;
-
-      filter.type = 'lowpass';
-      filter.frequency.value = 600; // cut highs for muffled effect
-      filter.Q.value = 0.5;
-
-      gain.gain.setValueAtTime(vol * 6, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.35);
-    } catch (e) {
-      // Silently disable on failure
-    }
+    this._playTone(APP_SETTINGS.audio.countdownBeepFrequency, APP_SETTINGS.audio.countdownBeepDuration);
   }
 
   /**
    * Beep during prep countdown (rising pitch based on seconds remaining).
    * @param {number} remainingSec - Seconds left in prep (1-5)
    */
-  playPrepBeep(remainingSec) {
-    const freq = APP_SETTINGS.audio.prepBeepBaseFrequency + (APP_SETTINGS.minPrepCountdownSec - remainingSec) * APP_SETTINGS.audio.prepBeepFrequencyStep;
+  playPrepBeep(remainingSec, totalPrepSec) {
+    const freq = APP_SETTINGS.audio.prepBeepBaseFrequency + (totalPrepSec - remainingSec) * APP_SETTINGS.audio.prepBeepFrequencyStep;
     this._playTone(freq, APP_SETTINGS.audio.prepBeepDuration);
   }
 
@@ -3202,8 +3181,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const alert = originalTick();
 
       // Prep countdown beeps
-      if (currentPhase === PHASES.PREP && alert.remainingSec >= 0 && alert.remainingSec <= APP_SETTINGS.minPrepCountdownSec - 1) {
-        audioManager.playPrepBeep(alert.remainingSec + 1);
+      if (currentPhase === PHASES.PREP && alert.remainingSec >= 0 && alert.remainingSec <= state.config.prepDurationSec - 1) {
+        audioManager.playPrepBeep(alert.remainingSec + 1, state.config.prepDurationSec);
       }
 
       // Round/rest countdown alerts
